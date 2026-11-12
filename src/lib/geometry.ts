@@ -41,18 +41,19 @@ export const LINE_HALF_LENGTH = 2.2;
 /** Best initial camera per question: oblique for intersection, low for the parallel gap, high for the contained line. */
 export const CAMERA_VIEWS: Record<CaseIndex, Vec3> = { 0: [6.5, 3.4, 7], 1: [7.5, 1.6, 6.5], 2: [4.5, 7.5, 6] };
 const at = (o: Vec3, u: Vec3, t: number): Vec3 => [o[0] + u[0] * t, o[1] + u[1] * t, o[2] + u[2] * t];
-/** Half-length used to draw question 3's line: far beyond the illustrated region so d reads as an infinite line in (P). */
-export const CONTAINED_HALF_LENGTH = 40;
-/** Drawn segment of d. Question 3 is never clipped at the illustration edge: (P) is infinite, so d is drawn far past it. */
+/** Half-length used to draw question 3's line: short enough that the whole segment always stays inside the illustrated (P). */
+export const CONTAINED_HALF_LENGTH = 1.6;
+/** Drawn segment of d. Question 3 is never clipped at the illustration edge: the segment is short and moves freely inside (P). */
 export function lineSegment(index: CaseIndex, origin: Vec3, direction: Vec3): [Vec3, Vec3] {
   const len = Math.hypot(...direction);
   const u: Vec3 = [direction[0] / len, direction[1] / len, direction[2] / len];
   const half = index === 2 ? CONTAINED_HALF_LENGTH : LINE_HALF_LENGTH;
   return [at(origin, u, -half), at(origin, u, half)];
 }
-/** Every point of the segment lies in (P): y = 0 (the plane is unbounded). */
+/** Every point of the segment lies in (P): y = 0, and both endpoints stay inside the illustrated rectangle with margin. */
 export function segmentInsidePlane([a, b]: [Vec3, Vec3]) {
-  return a[1] === 0 && b[1] === 0;
+  const inside = (p: Vec3) => p[1] === 0 && Math.abs(p[0]) <= PLANE_HALF.x - LINE_MARGIN && Math.abs(p[2]) <= PLANE_HALF.z - LINE_MARGIN;
+  return inside(a) && inside(b);
 }
 /** A point is hidden when the sight ray from the camera crosses the plane rectangle first. Points on the plane are never hidden. */
 export function isHidden(p: Vec3, camera: Vec3) {
