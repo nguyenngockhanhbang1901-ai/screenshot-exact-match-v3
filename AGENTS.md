@@ -37,3 +37,6 @@ use the editor.
 - Team capability hashes never leave the server; plaintext links are returned only once to the verified room creator to reduce secret exposure.
 - Question clocks are server-authoritative: start/end timestamps live in team timings, start is set once and end is capped at the deadline, so reloads or disconnects never grant extra time.
 - Solid/dashed line parts are computed per frame from the live camera by pure visibility math; points on the plane are never hidden.
+
+## Database migrations
+- The migration journal is intentionally empty and the existing schema predates Drizzle; never add CREATE TABLE for tables already in the database, because applying it would fail and mask the real change.
