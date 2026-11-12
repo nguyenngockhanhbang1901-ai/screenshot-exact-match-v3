@@ -65,6 +65,7 @@ export type Database = {
           current_step: number
           id: string
           owner_id: string
+          started_at: string | null
           team_count: number
           title: string
         }
@@ -77,6 +78,7 @@ export type Database = {
           current_step?: number
           id?: string
           owner_id: string
+          started_at?: string | null
           team_count: number
           title: string
         }
@@ -89,6 +91,7 @@ export type Database = {
           current_step?: number
           id?: string
           owner_id?: string
+          started_at?: string | null
           team_count?: number
           title?: string
         }
@@ -99,7 +102,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      begin_classroom_assignment: { Args: { room_id: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

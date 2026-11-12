@@ -9,3 +9,6 @@
 - [x] Student end-to-end check (timer, timeout lock, reload, results)
 - [x] Reset copied migration history to an empty post-remix baseline
 - [x] Homepage with teacher sign-in and student classroom-code entry, no manual team access code
+- [x] Teacher-controlled common assignment start and automatic submission updates
+- [ ] Verify real teacher release and student submission end-to-end — blocked: remixed backend has no auth users or classrooms; requires teacher signup/sign-in
+- [x] Verify empty post-remix migration baseline before classroom schema changes

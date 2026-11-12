@@ -37,6 +37,8 @@ use the editor.
 - Team capability hashes never leave the server; plaintext links are returned only once to the verified room creator to reduce secret exposure.
 - Code-only entry validates an open classroom and selected team server-side, then derives a stable capability from the stored secret hash; this preserves private reads and server clocks without manual team secrets.
 - Question clocks are server-authoritative: start/end timestamps live in team timings, start is set once and end is capped at the deadline, so reloads or disconnects never grant extra time.
+- Assignment release atomically records the owner's common first-question start for every team; server guards reject starts and saves before release to prevent early access or late-join extra time.
+- Teacher updates subscribe to published classroom tables and poll as a fallback, so a dropped realtime connection never requires a manual reload.
 - Solid/dashed line parts are computed per frame from the live camera by pure visibility math; points on the plane are never hidden.
 
 ## Database migrations

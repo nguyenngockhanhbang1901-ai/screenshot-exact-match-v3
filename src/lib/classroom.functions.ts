@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { canEdit, mayReadOtherAnswers, validateTeamCount } from './geometry';
 import { acceptsAnswer, canStart, endTime, normalizeTimings, timingAt, type Timing } from './timer';
 import { classroomCodeSchema, classroomJoinSchema, codeJoinKey } from './classroom-access';
+import { assignmentStarted } from './assignment';
 
 async function hash(value: string) {
   const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
@@ -44,6 +45,12 @@ export const createClassroom = createServerFn({ method: 'POST' }).middleware([re
     if (teamError) throw new Error('Không tạo được tổ');
     return { classroom, invitations: invitations.map(({ number, key }) => ({ number, key })) };
   });
+export const beginAssignment = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ roomId: z.string().uuid() })).handler(async ({ data, context }) => {
+    const { data: startedAt, error } = await context.supabase.rpc('begin_classroom_assignment', { room_id: data.roomId });
+    if (error || !startedAt) throw new Error('Không bắt đầu được bài làm');
+    return { startedAt };
+  });
 export const studentRoom = createServerFn({ method: 'POST' }).inputValidator(accessSchema).handler(async ({ data }) => {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const { data: room } = await supabaseAdmin.from('classrooms').select().eq('code', data.code.toUpperCase()).maybeSingle();
@@ -55,23 +62,24 @@ export const studentRoom = createServerFn({ method: 'POST' }).inputValidator(acc
     const { data: rows } = await supabaseAdmin.from('classroom_teams').select('number,answers,submitted_at,timings').eq('classroom_id', room.id).order('number');
     released = (rows ?? []).map(r => ({ ...r, answers: r.answers as string[], timings: normalizeTimings(r.timings) }));
   }
-  return { room: { id: room.id, code: room.code, title: room.title, current_step: room.current_step, closed: room.closed, answers_visible: room.answers_visible, correct_visible: room.correct_visible }, team: { number: team.number, answers: team.answers as string[], step: team.step, submitted_at: team.submitted_at, timings: normalizeTimings(team.timings) }, released, serverNow: Date.now() };
+  return { room: { id: room.id, code: room.code, title: room.title, started_at: room.started_at, current_step: room.current_step, closed: room.closed, answers_visible: room.answers_visible, correct_visible: room.correct_visible }, team: { number: team.number, answers: team.answers as string[], step: team.step, submitted_at: team.submitted_at, timings: normalizeTimings(team.timings) }, released, serverNow: Date.now() };
 });
 async function verifiedTeam(data: z.infer<typeof accessSchema>) {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-  const { data: room } = await supabaseAdmin.from('classrooms').select('id,closed').eq('code', data.code.toUpperCase()).maybeSingle();
+  const { data: room } = await supabaseAdmin.from('classrooms').select('id,closed,started_at').eq('code', data.code.toUpperCase()).maybeSingle();
   if (!room || room.closed) throw new Error('Lớp học đã đóng');
+  if (!assignmentStarted(room.started_at, Date.now())) throw new Error('Chờ giáo viên bắt đầu giao bài');
   const { data: team } = await supabaseAdmin.from('classroom_teams').select().eq('classroom_id', room.id).eq('number', data.number).maybeSingle();
   if (!team || (team.access_hash !== await hash(data.key) && data.key !== await codeJoinKey(room.id, team.access_hash)) || !canEdit(team.submitted_at)) throw new Error('Bài đã nộp hoặc thông tin tham gia không đúng');
-  return { supabaseAdmin, team };
+  return { supabaseAdmin, team, room };
 }
 /** Starts a question's 30s clock once; repeated calls (reload, reconnect) keep the original server timestamp. */
 export const startQuestion = createServerFn({ method: 'POST' }).inputValidator(accessSchema.extend({ step: z.number().int().min(0).max(2) })).handler(async ({ data }) => {
-  const { supabaseAdmin, team } = await verifiedTeam(data);
+  const { supabaseAdmin, team, room } = await verifiedTeam(data);
   const timings = normalizeTimings(team.timings);
   if (!canStart(timings, data.step)) throw new Error('Hãy hoàn thành câu trước');
   if (!timingAt(timings, data.step).started_at) {
-    timingAt(timings, data.step).started_at = new Date().toISOString();
+    timingAt(timings, data.step).started_at = data.step === 0 ? room.started_at : new Date().toISOString();
     const { error } = await supabaseAdmin.from('classroom_teams').update({ timings, step: data.step }).eq('id', team.id).is('submitted_at', null);
     if (error) throw new Error('Không bắt đầu được câu hỏi');
   }
