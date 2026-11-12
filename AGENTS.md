@@ -35,6 +35,7 @@ use the editor.
 - Teacher data uses signed-in owner RLS; students use server-validated per-team capabilities, so they need no accounts and cannot read unreleased answers.
 - Only the root subscribes to auth identity changes; components refresh verified user state from its notification to prevent competing subscriptions.
 - Team capability hashes never leave the server; plaintext links are returned only once to the verified room creator to reduce secret exposure.
+- Code-only entry validates an open classroom and selected team server-side, then derives a stable capability from the stored secret hash; this preserves private reads and server clocks without manual team secrets.
 - Question clocks are server-authoritative: start/end timestamps live in team timings, start is set once and end is capped at the deadline, so reloads or disconnects never grant extra time.
 - Solid/dashed line parts are computed per frame from the live camera by pure visibility math; points on the plane are never hidden.
 
