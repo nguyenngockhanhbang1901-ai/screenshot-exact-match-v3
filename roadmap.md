@@ -10,4 +10,4 @@
 - [x] Reset copied migration history to an empty post-remix baseline
 - [x] Homepage with teacher sign-in and student classroom-code entry, no manual team access code
 - [ ] Teacher-controlled common assignment start and automatic submission updates
-- [ ] Verify empty post-remix migration baseline before classroom schema changes
+- [x] Verify empty post-remix migration baseline before classroom schema changes
