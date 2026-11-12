@@ -3,12 +3,30 @@ import { z } from 'zod';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { canEdit, mayReadOtherAnswers, validateTeamCount } from './geometry';
 import { acceptsAnswer, canStart, endTime, normalizeTimings, timingAt, type Timing } from './timer';
+import { classroomCodeSchema, classroomJoinSchema, codeJoinKey } from './classroom-access';
 
 async function hash(value: string) {
   const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return Array.from(new Uint8Array(bytes), b => b.toString(16).padStart(2, '0')).join('');
 }
 const accessSchema = z.object({ code: z.string().min(4).max(12), number: z.number().int().min(1).max(10), key: z.string().length(24) });
+export const findClassroom = createServerFn({ method: 'POST' }).inputValidator(classroomCodeSchema).handler(async ({ data }) => {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+  const { data: room } = await supabaseAdmin.from('classrooms').select('id,title,closed').eq('code', data.code).maybeSingle();
+  if (!room) throw new Error('Mã lớp không đúng');
+  if (room.closed) throw new Error('Lớp học đã đóng');
+  const { data: teams, error } = await supabaseAdmin.from('classroom_teams').select('number').eq('classroom_id', room.id).order('number');
+  if (error || !teams?.length) throw new Error('Lớp học chưa có tổ');
+  return { title: room.title, numbers: teams.map(t => t.number) };
+});
+export const joinClassroom = createServerFn({ method: 'POST' }).inputValidator(classroomJoinSchema).handler(async ({ data }) => {
+  const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+  const { data: room } = await supabaseAdmin.from('classrooms').select('id,closed').eq('code', data.code).maybeSingle();
+  if (!room || room.closed) throw new Error('Mã lớp không đúng hoặc lớp đã đóng');
+  const { data: team } = await supabaseAdmin.from('classroom_teams').select('access_hash').eq('classroom_id', room.id).eq('number', data.number).maybeSingle();
+  if (!team) throw new Error('Tổ không có trong lớp');
+  return { code: data.code, number: data.number, key: await codeJoinKey(room.id, team.access_hash) };
+});
 export const createClassroom = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth])
   .inputValidator(z.object({ title: z.string().trim().min(1).max(100), teamCount: z.number().int().min(1).max(10) }))
   .handler(async ({ data, context }) => {
@@ -30,8 +48,8 @@ export const studentRoom = createServerFn({ method: 'POST' }).inputValidator(acc
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const { data: room } = await supabaseAdmin.from('classrooms').select().eq('code', data.code.toUpperCase()).maybeSingle();
   if (!room) throw new Error('Mã lớp không đúng');
-  const { data: team } = await supabaseAdmin.from('classroom_teams').select().eq('classroom_id', room.id).eq('number', data.number).eq('access_hash', await hash(data.key)).maybeSingle();
-  if (!team) throw new Error('Mã truy cập tổ không đúng');
+  const { data: team } = await supabaseAdmin.from('classroom_teams').select().eq('classroom_id', room.id).eq('number', data.number).maybeSingle();
+  if (!team || (team.access_hash !== await hash(data.key) && data.key !== await codeJoinKey(room.id, team.access_hash))) throw new Error('Thông tin tham gia không hợp lệ');
   let released: { number: number; answers: string[]; submitted_at: string | null; timings: Timing[] }[] = [];
   if (mayReadOtherAnswers(room.answers_visible)) {
     const { data: rows } = await supabaseAdmin.from('classroom_teams').select('number,answers,submitted_at,timings').eq('classroom_id', room.id).order('number');
@@ -43,8 +61,8 @@ async function verifiedTeam(data: z.infer<typeof accessSchema>) {
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
   const { data: room } = await supabaseAdmin.from('classrooms').select('id,closed').eq('code', data.code.toUpperCase()).maybeSingle();
   if (!room || room.closed) throw new Error('Lớp học đã đóng');
-  const { data: team } = await supabaseAdmin.from('classroom_teams').select().eq('classroom_id', room.id).eq('number', data.number).eq('access_hash', await hash(data.key)).maybeSingle();
-  if (!team || !canEdit(team.submitted_at)) throw new Error('Bài đã nộp hoặc mã tổ không đúng');
+  const { data: team } = await supabaseAdmin.from('classroom_teams').select().eq('classroom_id', room.id).eq('number', data.number).maybeSingle();
+  if (!team || (team.access_hash !== await hash(data.key) && data.key !== await codeJoinKey(room.id, team.access_hash)) || !canEdit(team.submitted_at)) throw new Error('Bài đã nộp hoặc thông tin tham gia không đúng');
   return { supabaseAdmin, team };
 }
 /** Starts a question's 30s clock once; repeated calls (reload, reconnect) keep the original server timestamp. */
