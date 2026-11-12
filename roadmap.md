@@ -1,0 +1,10 @@
+# Classroom build
+- [x] Automatic world-space line motion, playback controls and invariant verification
+- [x] Exact interactive geometry and Vietnamese classroom UI
+- [x] Teacher sessions and team storage
+- [x] Secure student saves and submission
+- [x] 30s per-question server-timed clocks, hidden-line dashes, per-question cameras, Câu 1/2/3 naming, 3-column results with times
+- [ ] Signed-in teacher screen check: blocked until a teacher account exists
+- [x] Geometry and routing tests pass; app compilation passes
+- [x] Student end-to-end check (timer, timeout lock, reload, results)
+- [x] Reset copied migration history to an empty post-remix baseline
