@@ -44,7 +44,7 @@ function Scene({ index, playing, speed, resetVersion, palette, controls, onReady
   useEffect(() => { const c = controls.current; camera.position.set(...CAMERA_VIEWS[index]); camera.lookAt(0, 0, 0); if (c) { c.target.set(0, 0, 0); c.update(); c.saveState(); } }, [index, camera, controls]);
   return <>
     <ambientLight intensity={1.5} />
-    {index === 2 && <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.001, 0]}><planeGeometry args={[80, 80]} /><meshBasicMaterial color={palette.plane} transparent opacity={0.07} side={2} depthWrite={false} /></mesh>}<mesh rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[6.1, 4.5]} /><meshBasicMaterial color={palette.plane} transparent opacity={0.2} side={2} depthWrite={false} /></mesh>
+    <mesh rotation={[-Math.PI / 2, 0, 0]}><planeGeometry args={[6.1, 4.5]} /><meshBasicMaterial color={palette.plane} transparent opacity={0.2} side={2} depthWrite={false} /></mesh>
     {Array.from({ length: 9 }, (_, i) => <Line key={`x${i}`} points={[[-3, 0, -2 + i * 0.5], [3, 0, -2 + i * 0.5]]} color={palette.plane} transparent opacity={0.19} lineWidth={0.65} />)}
     {Array.from({ length: 13 }, (_, i) => <Line key={`z${i}`} points={[[-3 + i * 0.5, 0, -2.25], [-3 + i * 0.5, 0, 2.25]]} color={palette.plane} transparent opacity={0.19} lineWidth={0.65} />)}
     <Line points={[[-3,0,-2.25],[3,0,-2.25],[3,0,2.25],[-3,0,2.25],[-3,0,-2.25]]} color={palette.plane} lineWidth={1.1} transparent opacity={0.6} />
