@@ -4,7 +4,7 @@ export const GOAL_DIMENSIONS = {
   width: 7.32,
   height: 2.44,
   depth: 2.2,
-  rearHeight: 2.05,
+  rearHeight: 1.55,
   steelRadius: 0.055,
   netRadius: 0.008,
 } as const;

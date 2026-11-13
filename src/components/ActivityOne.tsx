@@ -179,9 +179,9 @@ export default function ActivityOne() {
       </div>
       <section className="goal-viewer" aria-label="Mô hình khung thành bóng đá 3D">
         <div className="goal-legend"><span><i className="goal-legend-steel" />Khung thép sơn trắng</span><span><i className="goal-legend-net" />Lưới sợi</span></div>
-        {palette && <Canvas data-testid="goal-canvas" dpr={[1, 1.5]} camera={{ position: [7.2, 4.4, 8.8], fov: 37, near: 0.1, far: 150 }} onCreated={() => setReady(true)}>
+        {palette && <Canvas data-testid="goal-canvas" dpr={[1, 1.5]} camera={{ position: [5.4, 1.1, 6.6], fov: 44, near: 0.1, far: 150 }} onCreated={() => setReady(true)}>
           <GoalScene palette={palette} />
-          <OrbitControls ref={controls} makeDefault target={[0, 1.12, 0]} enablePan={false} enableDamping dampingFactor={0.08} rotateSpeed={0.72} minDistance={5.2} maxDistance={26} minPolarAngle={0} maxPolarAngle={Math.PI} />
+          <OrbitControls ref={controls} makeDefault target={[0, 1.5, 0]} enablePan={false} enableDamping dampingFactor={0.08} rotateSpeed={0.72} minDistance={4.2} maxDistance={26} minPolarAngle={0} maxPolarAngle={Math.PI} />
         </Canvas>}
         <div className="goal-view-status"><span className="goal-status-dot" />{ready ? 'Mô hình 3D sẵn sàng' : 'Đang dựng mô hình 3D'}</div>
         <div className="goal-controls">
