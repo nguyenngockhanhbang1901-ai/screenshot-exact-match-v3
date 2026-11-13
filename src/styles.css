@@ -220,6 +220,8 @@
 .results-grid h3 { font-size: 14px; font-weight: 600; margin: 10px 0; }
 .result-answer { border-bottom: 1px solid var(--border); padding: 14px 0; font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
 .result-answer strong { display: block; margin-bottom: 5px; }
+.result-answer.compact { padding: 7px 0; line-height: 1.6; }
+.result-answer.compact strong { display: inline; margin-bottom: 0; white-space: nowrap; }
 .correct-answer { background: var(--accent); color: var(--primary); padding: 14px; margin-top: 14px; font-size: 12px; line-height: 1.9; border-left: 3px solid var(--primary); }
 .form-stack { display: grid; gap: 14px; }
 .form-stack label { font-size: 12px; display: grid; gap: 7px; }
