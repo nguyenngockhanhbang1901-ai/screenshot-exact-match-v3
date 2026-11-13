@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { useServerFn } from '@tanstack/react-start';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import { Box, BookOpen, Users, GraduationCap, ArrowRight, ChevronLeft, Check, LockKeyhole, Plus, Copy, Eye, EyeOff, LogOut, CircleHelp, Play, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -100,7 +101,7 @@ export default function Classroom() {
   const results = role === 'teacher' ? Boolean(room?.answers_visible) : Boolean(student?.room.answers_visible);
   const locked = Boolean(student?.team.submitted_at || student?.room.closed);
   if (!entered) return <>
-    <header className="app-header"><div className="brand"><span className="brand-symbol"><Box size={24} /></span><div>Hình học 3D<small>Lớp học hình học không gian</small></div></div></header>
+    <header className="app-header"><div className="brand"><span className="brand-symbol"><Box size={24} /></span><div>Hình học 3D<small>Lớp học hình học không gian</small></div></div><Link to="/activity-1" className="goal-back-link">Hoạt động 1 · Khung thành 3D<ArrowRight size={15} /></Link></header>
     <main className="entry-workspace">
       <div className="entry-heading"><p className="eyebrow">Toán học 11</p><h1>Hình học 3D</h1><p>Đường thẳng và mặt phẳng</p></div>
       <div className="entry-columns">
@@ -115,10 +116,10 @@ export default function Classroom() {
     </main>
   </>;
   return <>
-    <header className="app-header"><div className="brand"><span className="brand-symbol"><Box size={24} strokeWidth={1.7} /></span><div>Hình học 3D<small>Không gian khám phá · Kết nối tri thức</small></div></div>
+    <header className="app-header"><div className="brand"><span className="brand-symbol"><Box size={24} strokeWidth={1.7} /></span><div>Hình học 3D<small>Không gian khám phá · Kết nối tri thức</small></div></div><Link to="/activity-1" className="goal-back-link">Hoạt động 1 · Khung thành 3D<ArrowRight size={15} /></Link>
       <div className="flex items-center gap-2"><Button variant="ghost" size="sm" onClick={() => { setEntered(false); setJoinInfo(null); setError(''); }}><ChevronLeft />Trang chủ</Button><Button variant="ghost" size="icon" title="Trợ giúp" aria-label="Trợ giúp" onClick={() => setHelp(true)}><CircleHelp /></Button>{user ? <Button variant="ghost" size="sm" onClick={() => { void action(async () => { await queryClient.cancelQueries(); queryClient.clear(); await supabase.auth.signOut(); await navigate({ to: '/auth', replace: true }); }); }}><LogOut />Đăng xuất</Button> : <Button variant="outline" size="sm" onClick={() => { void navigate({ to: '/auth' }); }}><GraduationCap />Đăng nhập</Button>}</div>
     </header>
-    <main className="workspace"><div className="eyebrow flex items-center gap-2"><BookOpen size={13} />Toán học 11 <span className="text-muted-foreground">/</span> Hình học không gian</div>
+    <main className="workspace"><div className="eyebrow flex items-center gap-2"><BookOpen size={13} />Hoạt động 2 <span className="text-muted-foreground">/</span> Toán học 11 <span className="text-muted-foreground">/</span> Hình học không gian</div>
       <div className="lesson-heading"><div><h1>Đường thẳng và mặt phẳng</h1><p>Khám phá vị trí tương đối trong không gian</p></div>{user && <div className="role-switch"><Button variant="ghost" className={role === 'student' ? 'active' : ''} onClick={() => setRole('student')}><Users />Học sinh</Button><Button variant="ghost" className={role === 'teacher' ? 'active' : ''} onClick={() => setRole('teacher')}><GraduationCap />Giáo viên</Button></div>}</div>
       {role === 'teacher' ? <div className="teacher-strip"><strong>{room ? `${room.title} · Mã lớp ${room.code}` : 'Lớp học của bạn'}</strong>{!user ? <Button onClick={() => { void navigate({ to: '/auth' }); }}>Đăng nhập để tạo lớp<ArrowRight /></Button> : <><select aria-label="Chọn lớp" className="bg-background border border-input rounded-md p-2 text-xs" value={room?.id ?? ''} onChange={e => { setRoom(rooms.find(r => r.id === e.target.value) ?? null); setInvitations([]); }}><option value="">Chọn lớp học</option>{rooms.map(r => <option key={r.id} value={r.id}>{r.title} · {r.code}</option>)}</select><Button onClick={() => setDialog('create')} size="sm"><Plus />Tạo lớp</Button>{room && <><Button size="sm" disabled={busy || room.closed || Boolean(room.started_at)} onClick={() => { void releaseAssignment(); }}><Play />{room.started_at ? 'Đã bắt đầu giao bài' : 'Bắt đầu giao bài'}</Button><Button size="sm" variant="outline" disabled={busy} onClick={() => { void updateRoom({ answers_visible: !room.answers_visible }); }}>{room.answers_visible ? <EyeOff /> : <Eye />}{room.answers_visible ? 'Ẩn bài làm' : 'SHOW ANSWER'}</Button><Button size="sm" variant="outline" onClick={() => { void updateRoom({ correct_visible: !room.correct_visible }); }}>{room.correct_visible ? 'Ẩn đáp án' : 'Hiện đáp án đúng'}</Button><Button size="sm" variant="outline" onClick={() => { void updateRoom({ closed: !room.closed }); }}>{room.closed ? 'Mở lại lớp' : 'Đóng lớp'}</Button></>}</>}</div> : <div className="flex justify-end mb-4"><Button variant="outline" size="sm" onClick={() => setDialog('join')}><Users />{student ? `${student.room.code} · Tổ ${student.team.number}` : 'Tham gia lớp học'}<ArrowRight /></Button></div>}
       {error && <p role="alert" className="error-note mb-4">{error}</p>}

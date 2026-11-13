@@ -14,4 +14,11 @@ describe("App routing", () => {
 
     expect(matches.at(-1)?.routeId).not.toBe(rootRouteId);
   });
+
+  it('matches the 3D football-goal activity route', () => {
+    const router = createRouter({ routeTree, context: { queryClient: new QueryClient() } });
+    const matches = router.matchRoutes('/activity-1');
+
+    expect(matches.at(-1)?.routeId).toBe('/activity-1');
+  });
 });
