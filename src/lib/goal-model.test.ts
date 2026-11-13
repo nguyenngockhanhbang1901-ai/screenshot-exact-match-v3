@@ -12,7 +12,11 @@ describe('football goal model', () => {
     const members = getGoalSteelMembers();
     expect(members.filter(({ name }) => name === 'Cột trái' || name === 'Cột phải')).toHaveLength(2);
     expect(members.filter(({ name }) => name === 'Xà ngang')).toHaveLength(1);
-    expect(members.filter(({ name }) => name.startsWith('Thanh nối'))).toHaveLength(3);
+    expect(members.filter(({ name }) => name.startsWith('Thanh nối'))).toHaveLength(2);
+    const stays = members.filter(({ name }) => name.startsWith('Thanh chéo'));
+    expect(stays).toHaveLength(2);
+    expect(stays.every(({ start, end }) => start[1] > 2 && end[1] < 0.1)).toBe(true);
+    expect(members.some(({ name }) => name.startsWith('Trụ sau'))).toBe(false);
     expect(members.every(({ start, end }) => start.some((value, axis) => value !== end[axis]))).toBe(true);
   });
 });

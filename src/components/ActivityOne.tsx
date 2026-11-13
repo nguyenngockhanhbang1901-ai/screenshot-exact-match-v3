@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { BufferGeometry, CatmullRomCurve3, DoubleSide, MeshPhysicalMaterial, Quaternion, TubeGeometry, Vector3 } from 'three';
+import { BufferGeometry, CatmullRomCurve3, DoubleSide, MeshPhysicalMaterial, MeshStandardMaterial, Quaternion, TubeGeometry, Vector3 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { OrbitControls as Controls } from 'three-stdlib';
 import { ArrowLeft, Box, Minus, Plus, RotateCcw } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
-import { getGoalSteelMembers, GOAL_DIMENSIONS, type Point3 } from '@/lib/goal-model';
+import { getGoalSteelMembers, goalProfileTop, GOAL_DIMENSIONS, type Point3 } from '@/lib/goal-model';
 
 type ScenePalette = { sky: string; grass: string; grassDark: string; grassLight: string; steel: string; net: string };
 
@@ -33,10 +33,18 @@ function useScenePalette() {
 }
 
 function Grass({ palette }: { palette: ScenePalette }) {
-  // Plain, uniform turf: no texture or stripes that could be mistaken for geometric lines.
+  // Plain, uniform turf; seen from below it stays visible as a faint translucent plane.
+  const material = useRef<MeshStandardMaterial>(null);
+  useFrame(({ camera }) => {
+    const m = material.current;
+    if (!m) return;
+    const below = camera.position.y < 0;
+    m.opacity = below ? 0.35 : 1;
+    m.depthWrite = !below;
+  });
   return <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.002, 0]}>
     <circleGeometry args={[90, 96]} />
-    <meshStandardMaterial color={palette.grass} roughness={1} metalness={0} />
+    <meshStandardMaterial ref={material} color={palette.grass} roughness={1} metalness={0} side={DoubleSide} transparent />
   </mesh>;
 }
 
@@ -53,77 +61,65 @@ function SteelMember({ start, end, radius, color }: { start: Point3; end: Point3
 }
 
 function createNetGeometry() {
-  const { width, height, depth, rearHeight, netRadius } = GOAL_DIMENSIONS;
+  const { width, depth, netRadius } = GOAL_DIMENSIONS;
   const half = width / 2 - 0.08;
   const front = depth / 2 - 0.1;
-  const back = -depth / 2 + 0.1;
-  const bottom = 0.065;
-  const frontTop = height - 0.1;
-  const rearTop = rearHeight - 0.1;
+  const back = -depth / 2 + 0.08;
+  const bottom = 0.06;
+  const top = (z: number) => Math.max(bottom, goalProfileTop(z, 0.1));
   const sections: BufferGeometry[] = [];
-  const addStrand = (points: Vector3[]) => {
-    const curve = new CatmullRomCurve3(points);
-    sections.push(new TubeGeometry(curve, 10, netRadius, 4, false));
+  const addStrand = (points: Vector3[]) => sections.push(new TubeGeometry(new CatmullRomCurve3(points), 12, netRadius, 4, false));
+  const steps = 12;
+  // Profile path from front-top along the roof, then down the sloping back to the ground.
+  const bendZ = depth / 2 - GOAL_DIMENSIONS.topDepth;
+  const roofLen = front - bendZ;
+  const slopeLen = Math.hypot(bendZ - back, top(bendZ) - bottom);
+  const total = roofLen + slopeLen;
+  const along = (s: number): [number, number] => {
+    const d = s * total;
+    if (d <= roofLen) return [front - d, top(front)];
+    const t = (d - roofLen) / slopeLen;
+    return [bendZ + (back - bendZ) * t, top(bendZ) + (bottom - top(bendZ)) * t];
   };
-  const steps = 8;
 
+  // Sides
   for (const side of [-1, 1]) {
-    for (let row = 0; row <= 7; row++) {
-      const level = row / 7;
-      const points = Array.from({ length: steps + 1 }, (_, i) => {
-        const u = i / steps;
-        const y = bottom + level * (frontTop + (rearTop - frontTop) * u - bottom) - 0.055 * Math.sin(Math.PI * u);
-        const x = side * (half + 0.045 * Math.sin(Math.PI * u));
-        return new Vector3(x, y, front + (back - front) * u);
-      });
-      addStrand(points);
-    }
-    for (let column = 0; column <= 6; column++) {
-      const u = column / 6;
-      const z = front + (back - front) * u;
-      const top = frontTop + (rearTop - frontTop) * u;
-      const points = Array.from({ length: steps + 1 }, (_, i) => {
+    for (let column = 0; column <= 7; column++) {
+      const z = front + (back - front) * (column / 7);
+      const h = top(z);
+      if (h - bottom < 0.05) continue;
+      addStrand(Array.from({ length: steps + 1 }, (_, i) => {
         const v = i / steps;
-        return new Vector3(side * (half + 0.035 * Math.sin(Math.PI * v)), bottom + (top - bottom) * v, z);
-      });
-      addStrand(points);
+        return new Vector3(side * (half + 0.03 * Math.sin(Math.PI * v)), bottom + (h - bottom) * v, z);
+      }));
+    }
+    for (let row = 1; row <= 6; row++) {
+      const y = bottom + (top(front) - bottom) * (row / 7);
+      const points: Vector3[] = [];
+      for (let i = 0; i <= steps; i++) {
+        const z = front + (back - front) * (i / steps);
+        if (top(z) < y) break;
+        points.push(new Vector3(side * half, y, z));
+      }
+      if (points.length > 1) addStrand(points);
     }
   }
-
-  for (let row = 0; row <= 20; row++) {
-    const level = row / 20;
-    const points = Array.from({ length: steps + 1 }, (_, i) => {
-      const u = i / steps;
-      const y = frontTop + (rearTop - frontTop) * u - 0.12 * Math.sin(Math.PI * u);
-      return new Vector3(-half + 2 * half * level, y, front + (back - front) * u);
-    });
-    addStrand(points);
-  }
-  for (let column = 0; column <= 6; column++) {
-    const u = column / 6;
-    const z = front + (back - front) * u;
-    const top = frontTop + (rearTop - frontTop) * u - 0.12 * Math.sin(Math.PI * u);
-    const points = Array.from({ length: steps + 1 }, (_, i) => {
-      const v = i / steps;
-      return new Vector3(-half + 2 * half * v, top - 0.035 * Math.sin(Math.PI * v), z);
-    });
-    addStrand(points);
-  }
-
-  const rearZ = back - 0.025;
-  for (let row = 0; row <= 7; row++) {
-    const level = row / 7;
-    const y = bottom + (rearTop - bottom) * level;
+  // Roof + sloping back: one sagging sheet across the width.
+  const sag = (s: number) => 0.14 * Math.sin(Math.PI * s);
+  for (let row = 0; row <= 12; row++) {
+    const [z, y] = along(row / 12);
     addStrand(Array.from({ length: steps + 1 }, (_, i) => {
       const u = i / steps;
-      return new Vector3(-half + 2 * half * u, y - 0.035 * Math.sin(Math.PI * u), rearZ - 0.035 * Math.sin(Math.PI * level));
+      return new Vector3(-half + 2 * half * u, y - sag(row / 12) * 0.6 * Math.sin(Math.PI * u), z - sag(row / 12) * 0.4 * Math.sin(Math.PI * u));
     }));
   }
   for (let column = 0; column <= 20; column++) {
     const x = -half + 2 * half * (column / 20);
+    const edge = Math.sin(Math.PI * (column / 20));
     addStrand(Array.from({ length: steps + 1 }, (_, i) => {
-      const v = i / steps;
-      return new Vector3(x, bottom + (rearTop - bottom) * v, rearZ - 0.035 * Math.sin(Math.PI * v));
+      const s = i / steps;
+      const [z, y] = along(s);
+      return new Vector3(x, y - sag(s) * 0.6 * edge, z - sag(s) * 0.4 * edge);
     }));
   }
 
@@ -191,7 +187,7 @@ export default function ActivityOne() {
           <Button variant="ghost" size="icon" title="Đưa về góc nhìn ban đầu" aria-label="Đưa về góc nhìn ban đầu" onClick={() => controls.current?.reset()}><RotateCcw /></Button>
         </div>
       </section>
-      <div className="goal-caption"><span>KHUNG CỐ ĐỊNH · CAMERA QUAN SÁT TỰ DO</span><span>Hai cột dọc <i /> xà ngang <i /> thanh nối sau <i /> lưới</span></div>
+      <div className="goal-caption"><span>KHUNG CỐ ĐỊNH · CAMERA QUAN SÁT TỰ DO</span><span>Hai cột dọc <i /> xà ngang <i /> thanh chéo <i /> lưới</span></div>
     </div>
   </main>;
 }
