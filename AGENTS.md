@@ -40,6 +40,7 @@ use the editor.
 - Assignment release atomically records the owner's common first-question start for every team; server guards reject starts and saves before release to prevent early access or late-join extra time.
 - Teacher updates subscribe to published classroom tables and poll as a fallback, so a dropped realtime connection never requires a manual reload.
 - Solid/dashed line parts are computed per frame from the live camera by pure visibility math; points on the plane are never hidden.
+- Keep Activity 1's fixed football-goal dimensions and steel-member coordinates in a pure geometry module, separate from its R3F scene, so camera movement cannot alter the model.
 
 ## Database migrations
 - The migration journal is intentionally empty and the existing schema predates Drizzle; never add CREATE TABLE for tables already in the database, because applying it would fail and mask the real change.
