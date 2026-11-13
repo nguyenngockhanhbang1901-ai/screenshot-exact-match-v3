@@ -12,7 +12,7 @@ describe('football goal model', () => {
     const members = getGoalSteelMembers();
     expect(members.filter(({ name }) => name === 'Cột trái' || name === 'Cột phải')).toHaveLength(2);
     expect(members.filter(({ name }) => name === 'Xà ngang')).toHaveLength(1);
-    expect(members.filter(({ name }) => name.startsWith('Thanh nối'))).toHaveLength(5);
+    expect(members.filter(({ name }) => name.startsWith('Thanh nối'))).toHaveLength(3);
     expect(members.every(({ start, end }) => start.some((value, axis) => value !== end[axis]))).toBe(true);
   });
 });

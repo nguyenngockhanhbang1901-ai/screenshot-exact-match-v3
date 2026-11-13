@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { BufferGeometry, CanvasTexture, CatmullRomCurve3, Color, DoubleSide, MeshPhysicalMaterial, RepeatWrapping, SRGBColorSpace, TubeGeometry, Vector3 } from 'three';
+import { BufferGeometry, CanvasTexture, CatmullRomCurve3, DoubleSide, MeshPhysicalMaterial, Quaternion, RepeatWrapping, SRGBColorSpace, TubeGeometry, Vector3 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { OrbitControls as Controls } from 'three-stdlib';
 import { ArrowLeft, Box, Minus, Plus, RotateCcw } from 'lucide-react';
@@ -68,7 +68,7 @@ function Grass({ palette }: { palette: ScenePalette }) {
   }, [palette]);
   return <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.025, 0]} receiveShadow>
     <planeGeometry args={[180, 180]} />
-    <meshStandardMaterial color={palette.grass} map={texture ?? undefined} roughness={0.96} />
+    <meshStandardMaterial color={texture ? "#ffffff" : palette.grass} map={texture} roughness={0.96} />
   </mesh>;
 }
 
@@ -77,7 +77,7 @@ function SteelMember({ start, end, radius, color }: { start: Point3; end: Point3
   const to = useMemo(() => new Vector3(...end), [end]);
   const center = useMemo(() => from.clone().add(to).multiplyScalar(0.5), [from, to]);
   const direction = useMemo(() => to.clone().sub(from), [from, to]);
-  const quaternion = useMemo(() => new Vector3(0, 1, 0).quaternionTo(direction.clone().normalize()), [direction]);
+  const quaternion = useMemo(() => new Quaternion().setFromUnitVectors(new Vector3(0, 1, 0), direction.clone().normalize()), [direction]);
   return <mesh position={center} quaternion={quaternion} castShadow receiveShadow>
     <cylinderGeometry args={[radius, radius, direction.length(), 24, 1]} />
     <meshPhysicalMaterial color={color} metalness={0.22} roughness={0.28} clearcoat={0.45} clearcoatRoughness={0.24} />

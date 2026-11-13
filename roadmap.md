@@ -12,4 +12,4 @@
 - [x] Teacher-controlled common assignment start and automatic submission updates
 - [ ] Verify real teacher release and student submission end-to-end — blocked: remixed backend has no auth users or classrooms; requires teacher signup/sign-in
 - [x] Verify empty post-remix migration baseline before classroom schema changes
-- [ ] Add Activity 1: fixed, regulation-proportioned 3D football goal with orbit camera and an Activity 2 link
+- [x] Add Activity 1: fixed, regulation-proportioned 3D football goal with orbit camera and an Activity 2 link
